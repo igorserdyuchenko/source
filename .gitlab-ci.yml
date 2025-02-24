@@ -1,0 +1,19 @@
+stages:
+  - build
+
+cache:
+  paths:
+    - node_modules/
+
+# Build job
+build:
+  stage: build
+  image: node:18
+  script:
+    - echo "Installing dependencies..."
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1h
