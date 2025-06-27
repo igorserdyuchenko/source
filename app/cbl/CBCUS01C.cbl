@@ -155,7 +155,6 @@
            DISPLAY 'ABENDING PROGRAM'
            MOVE 0 TO TIMING
            MOVE 999 TO ABCODE
-           CALL 'CEE3ABD'.
 
       *****************************************************************
        Z-DISPLAY-IO-STATUS.
