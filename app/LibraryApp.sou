@@ -21,7 +21,7 @@
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
-    <inst-vars>dvd1 dvd2 book1 book2</inst-vars>
+    <inst-vars>dvd1 dvd2 book1 book2 alice bob</inst-vars>
     <class-inst-vars></class-inst-vars>
     <imports>
       <import>LibraryCore</import>
@@ -47,8 +47,12 @@
       super initialize.
       dvd1 := DVD new title: 'The Matrix'; author: 'Wachowski Brothers'; yourself.
       dvd2 := DVD new title: 'Inception'; author: 'Christopher Nolan'; yourself.
+
       book1 := Book new title: 'Smalltalk Best Practices'; author: 'Kent Beck'; yourself.
       book2 := Book new title: 'Refactoring'; author: 'Martin Fowler'; yourself.
+
+      alice := Member new name: 'Alice'; yourself.
+      bob := Member new name: 'Bob'; yourself.
     </body>
   </methods>
 
@@ -65,11 +69,6 @@
 
       | alice bob book1 book2 |
 
-      book1 := Book new title: 'Smalltalk Best Practices'; author: 'Kent Beck'; yourself.
-      book2 := Book new title: 'Refactoring'; author: 'Martin Fowler'; yourself.
-
-      alice := Member new name: 'Alice'; yourself.
-      bob := Member new name: 'Bob'; yourself.
 
       alice borrow: book1.
       bob borrow: book2.
@@ -91,9 +90,6 @@
       | alice bob |
 
       self initialize.
-
-      alice := Member new name: 'Alice'; yourself.
-      bob := Member new name: 'Bob'; yourself.
 
       alice borrow: dvd1.
       bob borrow: dvd2.
