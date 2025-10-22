@@ -1,0 +1,317 @@
+<package name="TodoSync">
+
+  <!-- SyncProvider (base proxy) -->
+  <class>
+    <name>SyncProvider</name>
+    <super>Object</super>
+    <variables>implementation</variables>
+    <category>TodoSync</category>
+
+    <methods>
+      <class-id>SyncProvider</class-id>
+      <category>initialization</category>
+      <body package="TodoSync" selector="initializeWith:">
+        implementation := anImplementation.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>SyncProvider</class-id>
+      <category>proxying</category>
+      <body package="TodoSync" selector="doesNotUnderstand:">
+        ^implementation perform: aMessage selector withArguments: aMessage arguments.
+      </body>
+    </methods>
+  </class>
+
+  <!-- HttpSyncProxy -->
+  <class>
+    <name>HttpSyncProxy</name>
+    <super>Object</super>
+    <variables>authToken retryCount</variables>
+    <category>TodoSync</category>
+
+    <methods>
+      <class-id>HttpSyncProxy</class-id>
+      <category>initialization</category>
+      <body package="TodoSync" selector="initialize">
+        authToken := 'AUTH_TOKEN_12345'.
+        retryCount := 3.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>HttpSyncProxy</class-id>
+      <category>api</category>
+      <body package="TodoSync" selector="syncTasks:">
+        self syncTasksWithRetry: aCollection attempts: retryCount.
+      </body>
+
+      <body package="TodoSync" selector="syncChanges:">
+        Transcript show: 'Syncing ', aChangeCollection size printString, ' changes via HTTP...'; cr.
+        Transcript show: 'Auth: ', authToken; cr.
+        aChangeCollection do: [:change |
+          self syncChange: change].
+        Transcript show: 'HTTP sync complete.'; cr.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>HttpSyncProxy</class-id>
+      <category>private</category>
+      <body package="TodoSync" selector="syncTasksWithRetry:attempts:">
+        | success |
+        success := false.
+        attemptsRemaining timesRepeat: [
+          success ifFalse: [
+            Transcript show: 'Attempting HTTP sync (', (retryCount - attemptsRemaining + 1) printString, '/', retryCount printString, ')...'; cr.
+            success := self attemptSync: aCollection.
+            success ifFalse: [
+              Transcript show: 'Retry in 1 second...'; cr]]].
+        success ifFalse: [
+          Transcript show: 'HTTP sync failed after ', retryCount printString, ' attempts.'; cr].
+      </body>
+
+      <body package="TodoSync" selector="attemptSync:">
+        Transcript show: 'Connecting to https://api.example.com/sync...'; cr.
+        Transcript show: 'Auth: ', authToken; cr.
+        aCollection do: [:t | Transcript show: '→ Sent: ', t printString; cr].
+        Transcript show: 'HTTP sync successful.'; cr.
+        ^true.
+      </body>
+
+      <body package="TodoSync" selector="syncChange:">
+        | task operation |
+        task := aChange at: #task.
+        operation := aChange at: #operation.
+        Transcript show: '  HTTP ', operation asString asUppercase, ': ', task title; cr.
+      </body>
+    </methods>
+  </class>
+
+  <!-- WebSocketSyncProxy -->
+  <class>
+    <name>WebSocketSyncProxy</name>
+    <super>Object</super>
+    <variables>connected sessionId</variables>
+    <category>TodoSync</category>
+
+    <methods>
+      <class-id>WebSocketSyncProxy</class-id>
+      <category>initialization</category>
+      <body package="TodoSync" selector="initialize">
+        connected := false.
+        sessionId := nil.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>WebSocketSyncProxy</class-id>
+      <category>connection</category>
+      <body package="TodoSync" selector="connect">
+        connected ifFalse: [
+          Transcript show: 'Connecting to WebSocket: wss://sync.example.com...'; cr.
+          sessionId := 'WS_SESSION_', DateAndTime now asString.
+          connected := true.
+          Transcript show: 'WebSocket connected. Session: ', sessionId; cr].
+      </body>
+
+      <body package="TodoSync" selector="disconnect">
+        connected ifTrue: [
+          Transcript show: 'Disconnecting WebSocket session...'; cr.
+          connected := false.
+          sessionId := nil.
+          Transcript show: 'WebSocket disconnected.'; cr].
+      </body>
+
+      <body package="WebSocketSyncProxy" selector="isConnected">
+        ^connected.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>WebSocketSyncProxy</class-id>
+      <category>api</category>
+      <body package="TodoSync" selector="syncTasks:">
+        self connect.
+        Transcript show: 'Real-time sync via WebSocket...'; cr.
+        aCollection do: [:t |
+          Transcript show: '→ Streaming: ', t printString; cr.
+          self sendRealtimeUpdate: t].
+        Transcript show: 'WebSocket sync complete.'; cr.
+      </body>
+
+      <body package="TodoSync" selector="syncChanges:">
+        self connect.
+        Transcript show: 'Streaming ', aChangeCollection size printString, ' changes via WebSocket...'; cr.
+        aChangeCollection do: [:change |
+          self streamChange: change].
+        Transcript show: 'WebSocket stream complete.'; cr.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>WebSocketSyncProxy</class-id>
+      <category>private</category>
+      <body package="TodoSync" selector="sendRealtimeUpdate:">
+        Transcript show: '  WS → Server acknowledged: ', aTask title; cr.
+      </body>
+
+      <body package="TodoSync" selector="streamChange:">
+        | task operation |
+        task := aChange at: #task.
+        operation := aChange at: #operation.
+        Transcript show: '  WS ', operation asString asUppercase, ': ', task title, ' [ACK]'; cr.
+      </body>
+    </methods>
+  </class>
+
+  <!-- BatchSyncProxy -->
+  <class>
+    <name>BatchSyncProxy</name>
+    <super>Object</super>
+    <variables>batchSize compressionEnabled</variables>
+    <category>TodoSync</category>
+
+    <methods>
+      <class-id>BatchSyncProxy</class-id>
+      <category>initialization</category>
+      <body package="TodoSync" selector="initialize">
+        batchSize := 10.
+        compressionEnabled := true.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>BatchSyncProxy</class-id>
+      <category>api</category>
+      <body package="TodoSync" selector="syncTasks:">
+        | batches |
+        Transcript show: 'Preparing batch sync (batch size: ', batchSize printString, ')...'; cr.
+        batches := self createBatches: aCollection.
+        Transcript show: 'Created ', batches size printString, ' batch(es).'; cr.
+        batches do: [:batch | self uploadBatch: batch].
+        Transcript show: 'Batch sync complete.'; cr.
+      </body>
+
+      <body package="TodoSync" selector="syncChanges:">
+        | batches |
+        Transcript show: 'Batch syncing ', aChangeCollection size printString, ' changes...'; cr.
+        compressionEnabled ifTrue: [
+          Transcript show: 'Compression: enabled'; cr].
+        batches := self createChangeBatches: aChangeCollection.
+        Transcript show: 'Uploading ', batches size printString, ' batch(es)...'; cr.
+        batches doWithIndex: [:batch :index |
+          self uploadChangeBatch: batch index: index total: batches size].
+        Transcript show: 'All batches uploaded successfully.'; cr.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>BatchSyncProxy</class-id>
+      <category>private</category>
+      <body package="TodoSync" selector="createBatches:">
+        | batches currentBatch |
+        batches := OrderedCollection new.
+        currentBatch := OrderedCollection new.
+        aCollection do: [:item |
+          currentBatch add: item.
+          currentBatch size = batchSize ifTrue: [
+            batches add: currentBatch.
+            currentBatch := OrderedCollection new]].
+        currentBatch notEmpty ifTrue: [batches add: currentBatch].
+        ^batches.
+      </body>
+
+      <body package="TodoSync" selector="uploadBatch:">
+        Transcript show: '→ Uploading batch of ', aBatch size printString, ' tasks...'; cr.
+        aBatch do: [:t | Transcript show: '  • ', t printString; cr].
+        Transcript show: '  Batch uploaded.'; cr.
+      </body>
+
+      <body package="TodoSync" selector="createChangeBatches:">
+        ^self createBatches: aChangeCollection.
+      </body>
+
+      <body package="TodoSync" selector="uploadChangeBatch:index:total:">
+        Transcript show: '→ Batch ', index printString, '/', total printString, ' (', aBatch size printString, ' changes)'; cr.
+        aBatch do: [:change |
+          | task operation |
+          task := change at: #task.
+          operation := change at: #operation.
+          Transcript show: '  • ', operation asString asUppercase, ': ', task title; cr].
+        Transcript show: '  Batch ', index printString, ' uploaded.'; cr.
+      </body>
+    </methods>
+  </class>
+
+  <!-- SyncController -->
+  <class>
+    <name>SyncController</name>
+    <super>Object</super>
+    <variables>repository provider syncQueue</variables>
+    <category>TodoSync</category>
+
+    <methods>
+      <class-id>SyncController</class-id>
+      <category>initialization</category>
+      <body package="TodoSync" selector="initializeWith:provider:">
+        repository := aRepo.
+        provider := aProvider.
+        syncQueue := nil.
+      </body>
+
+      <body package="TodoSync" selector="initializeWith:provider:syncQueue:">
+        repository := aRepo.
+        provider := aProvider.
+        syncQueue := aSyncQueue.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>SyncController</class-id>
+      <category>operations</category>
+      <body package="TodoSync" selector="sync">
+        syncQueue isNil
+          ifTrue: [self syncAllTasks]
+          ifFalse: [self syncPendingChanges].
+      </body>
+
+      <body package="TodoSync" selector="syncAllTasks">
+        | tasks |
+        tasks := repository allTasks.
+        tasks isEmpty
+          ifTrue: [Transcript show: 'No tasks to sync.'; cr]
+          ifFalse: [
+            Transcript show: 'Starting full sync...'; cr.
+            provider syncTasks: tasks.
+            Transcript show: 'Sync done.'; cr].
+      </body>
+
+      <body package="TodoSync" selector="syncPendingChanges">
+        syncQueue hasPendingChanges
+          ifTrue: [
+            Transcript show: 'Syncing ', syncQueue pendingChangeCount printString, ' pending changes...'; cr.
+            provider syncChanges: syncQueue pendingChanges.
+            syncQueue clearPendingChanges.
+            Transcript show: 'Changes synced and queue cleared.'; cr]
+          ifFalse: [
+            Transcript show: 'No pending changes to sync.'; cr].
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>SyncController</class-id>
+      <category>configuration</category>
+      <body package="TodoSync" selector="switchProvider:">
+        provider := aNewProvider.
+        Transcript show: 'Switched sync provider.'; cr.
+      </body>
+
+      <body package="TodoSync" selector="currentProvider">
+        ^provider.
+      </body>
+    </methods>
+  </class>
+
+</package>

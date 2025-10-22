@@ -1,0 +1,640 @@
+<package name="TodoCore">
+
+  <!-- Task class -->
+  <class>
+    <name>Task</name>
+    <super>Object</super>
+    <variables>title done createdAt lastModifiedAt priority tags</variables>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>Task</class-id>
+      <category>accessing</category>
+
+      <body package="TodoCore" selector="title">^title</body>
+      <body package="TodoCore" selector="title:">
+        title := aString.
+        self markModified.
+      </body>
+
+      <body package="TodoCore" selector="done">^done</body>
+      <body package="TodoCore" selector="done:">
+        done := aBoolean.
+        self markModified.
+      </body>
+
+      <body package="TodoCore" selector="createdAt">^createdAt</body>
+      <body package="TodoCore" selector="createdAt:">createdAt := aDate</body>
+
+      <body package="TodoCore" selector="lastModifiedAt">^lastModifiedAt</body>
+      <body package="TodoCore" selector="lastModifiedAt:">lastModifiedAt := aTimestamp</body>
+
+      <body package="TodoCore" selector="priority">^priority</body>
+      <body package="TodoCore" selector="priority:">
+        priority := aSymbol.
+        self markModified.
+      </body>
+
+      <body package="TodoCore" selector="tags">^tags</body>
+      <body package="TodoCore" selector="tags:">
+        tags := aCollection.
+        self markModified.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>Task</class-id>
+      <category>initialization</category>
+      <body package="TodoCore" selector="initialize">
+        done := false.
+        createdAt := Date today.
+        lastModifiedAt := DateAndTime now.
+        priority := #medium.
+        tags := OrderedCollection new.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>Task</class-id>
+      <category>operations</category>
+      <body package="TodoCore" selector="markModified">
+        lastModifiedAt := DateAndTime now.
+      </body>
+
+      <body package="TodoCore" selector="addTag:">
+        (tags includes: aString) ifFalse: [
+          tags add: aString.
+          self markModified].
+      </body>
+
+      <body package="TodoCore" selector="removeTag:">
+        tags remove: aString ifAbsent: [].
+        self markModified.
+      </body>
+
+      <body package="TodoCore" selector="hasTag:">
+        ^tags includes: aString.
+      </body>
+
+      <body package="TodoCore" selector="isHighPriority">
+        ^priority = #high.
+      </body>
+
+      <body package="TodoCore" selector="isMediumPriority">
+        ^priority = #medium.
+      </body>
+
+      <body package="TodoCore" selector="isLowPriority">
+        ^priority = #low.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>Task</class-id>
+      <category>printing</category>
+      <body package="TodoCore" selector="printString">
+        ^String streamContents: [:s |
+          s nextPutAll: '[';
+          nextPutAll: (priority asString asUppercase);
+          nextPutAll: '] ';
+          nextPutAll: title;
+          nextPutAll: (done ifTrue: [' [✓]'] ifFalse: [' [ ]']).
+          tags isEmpty ifFalse: [
+            s nextPutAll: ' {';
+            nextPutAll: (tags joinSeparatedBy: ', ');
+            nextPutAll: '}']].
+      </body>
+    </methods>
+  </class>
+
+  <!-- TaskRepository class -->
+  <class>
+    <name>TaskRepository</name>
+    <super>Object</super>
+    <variables>tasks</variables>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>TaskRepository</class-id>
+      <category>initialization</category>
+      <body package="TodoCore" selector="initialize">
+        tasks := OrderedCollection new.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskRepository</class-id>
+      <category>operations</category>
+      <body package="TodoCore" selector="addTask:">
+        tasks add: aTask.
+      </body>
+
+      <body package="TodoCore" selector="removeTask:">
+        tasks remove: aTask ifAbsent: [].
+      </body>
+
+      <body package="TodoCore" selector="allTasks">
+        ^tasks.
+      </body>
+
+      <body package="TodoCore" selector="completedTasks">
+        ^tasks select: [:t | t done].
+      </body>
+
+      <body package="TodoCore" selector="pendingTasks">
+        ^tasks reject: [:t | t done].
+      </body>
+
+      <body package="TodoCore" selector="size">
+        ^tasks size.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskRepository</class-id>
+      <category>filtering</category>
+      <body package="TodoCore" selector="tasksByPriority:">
+        ^tasks select: [:t | t priority = aPrioritySymbol].
+      </body>
+
+      <body package="TodoCore" selector="highPriorityTasks">
+        ^self tasksByPriority: #high.
+      </body>
+
+      <body package="TodoCore" selector="mediumPriorityTasks">
+        ^self tasksByPriority: #medium.
+      </body>
+
+      <body package="TodoCore" selector="lowPriorityTasks">
+        ^self tasksByPriority: #low.
+      </body>
+
+      <body package="TodoCore" selector="tasksWithTag:">
+        ^tasks select: [:t | t hasTag: aString].
+      </body>
+
+      <body package="TodoCore" selector="tasksModifiedAfter:">
+        ^tasks select: [:t | t lastModifiedAt > aTimestamp].
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskRepository</class-id>
+      <category>searching</category>
+      <body package="TodoCore" selector="searchByTitle:">
+        | searchLower |
+        searchLower := aString asLowercase.
+        ^tasks select: [:t | t title asLowercase includesSubstring: searchLower].
+      </body>
+
+      <body package="TodoCore" selector="findTaskMatching:">
+        "Find tasks matching a condition block"
+        ^tasks select: aBlock.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskRepository</class-id>
+      <category>statistics</category>
+      <body package="TodoCore" selector="completionRate">
+        | total completed |
+        total := tasks size.
+        total = 0 ifTrue: [^0].
+        completed := self completedTasks size.
+        ^(completed / total * 100) asFloat.
+      </body>
+
+      <body package="TodoCore" selector="taskCountByPriority">
+        | counts |
+        counts := Dictionary new.
+        counts at: #high put: (self highPriorityTasks size).
+        counts at: #medium put: (self mediumPriorityTasks size).
+        counts at: #low put: (self lowPriorityTasks size).
+        ^counts.
+      </body>
+    </methods>
+  </class>
+
+  <!-- TaskService class -->
+  <class>
+    <name>TaskService</name>
+    <super>Object</super>
+    <variables>repository validator syncQueue</variables>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>TaskService</class-id>
+      <category>initialization</category>
+      <body package="TodoCore" selector="initializeWithRepository:validator:syncQueue:">
+        repository := aRepository.
+        validator := aValidator.
+        syncQueue := aSyncQueue.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskService</class-id>
+      <category>api</category>
+      <body package="TodoCore" selector="createTask:">
+        ^self createTask: aString priority: #medium tags: #().
+      </body>
+
+      <body package="TodoCore" selector="createTask:priority:tags:">
+        | task validationResult |
+        task := Task new.
+        task initialize.
+        task title: aString.
+        task priority: aPrioritySymbol.
+        aTags do: [:tag | task addTag: tag].
+
+        validationResult := validator validate: task.
+        validationResult isValid ifFalse: [
+          Transcript show: 'Validation failed: ', validationResult errorMessage; cr.
+          ^nil].
+
+        repository addTask: task.
+        syncQueue recordChange: task operation: #create.
+        ^task.
+      </body>
+
+      <body package="TodoCore" selector="updateTask:title:">
+        | validationResult |
+        aTask title: newTitle.
+        validationResult := validator validate: aTask.
+        validationResult isValid ifTrue: [
+          syncQueue recordChange: aTask operation: #update].
+        ^validationResult.
+      </body>
+
+      <body package="TodoCore" selector="updateTask:priority:">
+        aTask priority: newPriority.
+        syncQueue recordChange: aTask operation: #update.
+      </body>
+
+      <body package="TodoCore" selector="completeTask:">
+        aTask done: true.
+        syncQueue recordChange: aTask operation: #update.
+      </body>
+
+      <body package="TodoCore" selector="deleteTask:">
+        repository removeTask: aTask.
+        syncQueue recordChange: aTask operation: #delete.
+      </body>
+
+      <body package="TodoCore" selector="listTasks">
+        ^repository allTasks.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskService</class-id>
+      <category>bulk operations</category>
+      <body package="TodoCore" selector="completeAllTasks">
+        repository allTasks do: [:task |
+          self completeTask: task].
+      </body>
+
+      <body package="TodoCore" selector="deleteCompletedTasks">
+        repository completedTasks copy do: [:task |
+          self deleteTask: task].
+      </body>
+
+      <body package="TodoCore" selector="setPriorityForAll:priority:">
+        aTasks do: [:task |
+          self updateTask: task priority: aPriority].
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskService</class-id>
+      <category>querying</category>
+      <body package="TodoCore" selector="searchTasks:">
+        ^repository searchByTitle: aSearchString.
+      </body>
+
+      <body package="TodoCore" selector="filterByPriority:">
+        ^repository tasksByPriority: aPrioritySymbol.
+      </body>
+
+      <body package="TodoCore" selector="filterByTag:">
+        ^repository tasksWithTag: aTagString.
+      </body>
+    </methods>
+  </class>
+
+  <!-- SyncQueue class -->
+  <class>
+    <name>SyncQueue</name>
+    <super>Object</super>
+    <variables>pendingChanges</variables>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>SyncQueue</class-id>
+      <category>initialization</category>
+      <body package="TodoCore" selector="initialize">
+        pendingChanges := OrderedCollection new.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>SyncQueue</class-id>
+      <category>operations</category>
+      <body package="TodoCore" selector="recordChange:operation:">
+        | change |
+        change := Dictionary new.
+        change at: #task put: aTask.
+        change at: #operation put: anOperationSymbol.
+        change at: #timestamp put: DateAndTime now.
+        pendingChanges add: change.
+      </body>
+
+      <body package="TodoCore" selector="pendingChanges">
+        ^pendingChanges.
+      </body>
+
+      <body package="TodoCore" selector="clearPendingChanges">
+        pendingChanges := OrderedCollection new.
+      </body>
+
+      <body package="TodoCore" selector="hasPendingChanges">
+        ^pendingChanges notEmpty.
+      </body>
+
+      <body package="TodoCore" selector="pendingChangeCount">
+        ^pendingChanges size.
+      </body>
+
+      <body package="TodoCore" selector="changesAfter:">
+        ^pendingChanges select: [:change |
+          (change at: #timestamp) > aTimestamp].
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>SyncQueue</class-id>
+      <category>reporting</category>
+      <body package="TodoCore" selector="printPendingChanges">
+        Transcript show: '--- Pending Changes (', pendingChanges size printString, ') ---'; cr.
+        pendingChanges do: [:change |
+          Transcript show: '  ', (change at: #operation) asString asUppercase;
+          show: ': ';
+          show: ((change at: #task) title);
+          cr].
+      </body>
+    </methods>
+  </class>
+
+  <!-- TaskValidator class -->
+  <class>
+    <name>TaskValidator</name>
+    <super>Object</super>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>TaskValidator</class-id>
+      <category>validation</category>
+      <body package="TodoCore" selector="validate:">
+        | result |
+        result := ValidationResult new.
+        result initialize.
+
+        "Check title"
+        (aTask title isNil or: [aTask title isEmpty]) ifTrue: [
+          result markInvalid: 'Task title cannot be empty'.
+          ^result].
+
+        aTask title size > 200 ifTrue: [
+          result markInvalid: 'Task title too long (max 200 characters)'.
+          ^result].
+
+        "Check priority"
+        (#(#low #medium #high) includes: aTask priority) ifFalse: [
+          result markInvalid: 'Invalid priority (must be low, medium, or high)'.
+          ^result].
+
+        result markValid.
+        ^result.
+      </body>
+    </methods>
+  </class>
+
+  <!-- ValidationResult class -->
+  <class>
+    <name>ValidationResult</name>
+    <super>Object</super>
+    <variables>valid errorMessage</variables>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>ValidationResult</class-id>
+      <category>initialization</category>
+      <body package="TodoCore" selector="initialize">
+        valid := false.
+        errorMessage := ''.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>ValidationResult</class-id>
+      <category>accessing</category>
+      <body package="ValidationResult" selector="isValid">
+        ^valid.
+      </body>
+
+      <body package="ValidationResult" selector="errorMessage">
+        ^errorMessage.
+      </body>
+
+      <body package="ValidationResult" selector="markValid">
+        valid := true.
+        errorMessage := ''.
+      </body>
+
+      <body package="ValidationResult" selector="markInvalid:">
+        valid := false.
+        errorMessage := aString.
+      </body>
+    </methods>
+  </class>
+
+  <!-- TaskStatistics class -->
+  <class>
+    <name>TaskStatistics</name>
+    <super>Object</super>
+    <variables>repository</variables>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>TaskStatistics</class-id>
+      <category>initialization</category>
+      <body package="TodoCore" selector="initializeWithRepository:">
+        repository := aRepository.
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskStatistics</class-id>
+      <category>metrics</category>
+      <body package="TodoCore" selector="totalTasks">
+        ^repository size.
+      </body>
+
+      <body package="TodoCore" selector="completedCount">
+        ^repository completedTasks size.
+      </body>
+
+      <body package="TodoCore" selector="pendingCount">
+        ^repository pendingTasks size.
+      </body>
+
+      <body package="TodoCore" selector="completionRate">
+        ^repository completionRate.
+      </body>
+
+      <body package="TodoCore" selector="tasksByPriority">
+        ^repository taskCountByPriority.
+      </body>
+
+      <body package="TodoCore" selector="highPriorityPending">
+        ^repository highPriorityTasks reject: [:t | t done].
+      </body>
+    </methods>
+
+    <methods>
+      <class-id>TaskStatistics</class-id>
+      <category>reporting</category>
+      <body package="TodoCore" selector="printReport">
+        | priorityCounts |
+        Transcript show: '=== Task Statistics ==='; cr.
+        Transcript show: 'Total tasks: ', self totalTasks printString; cr.
+        Transcript show: 'Completed: ', self completedCount printString; cr.
+        Transcript show: 'Pending: ', self pendingCount printString; cr.
+        Transcript show: 'Completion rate: ', self completionRate printString, '%'; cr.
+
+        priorityCounts := self tasksByPriority.
+        Transcript show: 'By Priority:'; cr.
+        Transcript show: '  High: ', (priorityCounts at: #high) printString; cr.
+        Transcript show: '  Medium: ', (priorityCounts at: #medium) printString; cr.
+        Transcript show: '  Low: ', (priorityCounts at: #low) printString; cr.
+
+        Transcript show: 'High priority pending: ', self highPriorityPending size printString; cr.
+      </body>
+    </methods>
+  </class>
+
+  <!-- TodoApp class -->
+  <class>
+    <name>TodoApp</name>
+    <super>Object</super>
+    <category>TodoCore</category>
+
+    <methods>
+      <class-id>TodoApp</class-id>
+      <category>running</category>
+      <body package="TodoCore" selector="start">
+        | repo service syncController validator syncQueue stats task1 task2 task3 task4 httpProxy wsProxy batchProxy |
+
+        Transcript show: '╔════════════════════════════════════════╗'; cr.
+        Transcript show: '║   Todo App - Enhanced Demo            ║'; cr.
+        Transcript show: '╚════════════════════════════════════════╝'; cr; cr.
+
+        "Initialize core components"
+        repo := TaskRepository new.
+        repo initialize.
+
+        validator := TaskValidator new.
+
+        syncQueue := SyncQueue new.
+        syncQueue initialize.
+
+        service := TaskService new.
+        service initializeWithRepository: repo validator: validator syncQueue: syncQueue.
+
+        stats := TaskStatistics new.
+        stats initializeWithRepository: repo.
+
+        "Initialize sync proxies"
+        httpProxy := HttpSyncProxy new.
+        httpProxy initialize.
+
+        wsProxy := WebSocketSyncProxy new.
+        wsProxy initialize.
+
+        batchProxy := BatchSyncProxy new.
+        batchProxy initialize.
+
+        "Create tasks with different priorities and tags"
+        Transcript show: '=== Creating Tasks ==='; cr.
+        task1 := service createTask: 'Buy milk' priority: #high tags: #('shopping' 'urgent').
+        task2 := service createTask: 'Write Smalltalk code' priority: #medium tags: #('work' 'coding').
+        task3 := service createTask: 'Read a book' priority: #low tags: #('personal' 'leisure').
+        task4 := service createTask: 'Exercise' priority: #medium tags: #('health' 'daily').
+
+        "Complete and modify tasks"
+        service completeTask: task1.
+        service updateTask: task2 priority: #high.
+
+        "Display all tasks"
+        Transcript cr; show: '=== Task List ==='; cr.
+        service listTasks do: [:t | Transcript show: t printString; cr].
+
+        "Show statistics"
+        Transcript cr.
+        stats printReport.
+
+        "Show pending sync changes"
+        Transcript cr.
+        syncQueue printPendingChanges.
+
+        "Demonstrate HTTP sync with retry and auth"
+        Transcript cr; show: '=== Syncing with HTTP Proxy ==='; cr.
+        syncController := SyncController new.
+        syncController initializeWith: repo provider: httpProxy syncQueue: syncQueue.
+        syncController sync.
+
+        "Create more tasks for batch demo"
+        Transcript cr; show: '=== Adding More Tasks ==='; cr.
+        service createTask: 'Call dentist' priority: #high tags: #('health').
+        service createTask: 'Review pull request' priority: #medium tags: #('work').
+        syncQueue printPendingChanges.
+
+        "Demonstrate WebSocket real-time sync"
+        Transcript cr; show: '=== Syncing with WebSocket Proxy ==='; cr.
+        syncController switchProvider: wsProxy.
+        syncController sync.
+
+        "Create several more tasks for batch sync"
+        Transcript cr; show: '=== Creating Batch of Tasks ==='; cr.
+        service createTask: 'Task A' priority: #low tags: #('batch').
+        service createTask: 'Task B' priority: #low tags: #('batch').
+        service createTask: 'Task C' priority: #low tags: #('batch').
+        syncQueue printPendingChanges.
+
+        "Demonstrate batch sync"
+        Transcript cr; show: '=== Syncing with Batch Proxy ==='; cr.
+        syncController switchProvider: batchProxy.
+        syncController sync.
+
+        "Final statistics"
+        Transcript cr; show: '=== Final Statistics ==='; cr.
+        stats printReport.
+
+        "Search and filter examples"
+        Transcript cr; show: '=== Search & Filter Demo ==='; cr.
+        Transcript show: 'High priority tasks: '; cr.
+        (service filterByPriority: #high) do: [:t | Transcript show: '  ', t printString; cr].
+
+        Transcript show: 'Tasks with "work" tag: '; cr.
+        (service filterByTag: 'work') do: [:t | Transcript show: '  ', t printString; cr].
+
+        Transcript show: 'Search for "Task": '; cr.
+        (service searchTasks: 'Task') do: [:t | Transcript show: '  ', t printString; cr].
+
+        Transcript cr; show: '╔════════════════════════════════════════╗'; cr.
+        Transcript show: '║   Application Demo Complete!          ║'; cr.
+        Transcript show: '╚════════════════════════════════════════╝'; cr.
+      </body>
+    </methods>
+  </class>
+</package>
