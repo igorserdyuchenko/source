@@ -17,7 +17,7 @@
 
   <class>
     <name>Task</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Core</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -48,6 +48,19 @@
       lastModifiedAt := DateAndTime now.
       priority := #medium.
       tags := OrderedCollection new.
+    </body>
+
+    <body package="TodoCore" selector="initialize:">initialize: aTitle
+      "Initialize task with a title"
+      self initialize.
+      title := aTitle.
+    </body>
+
+    <body package="TodoCore" selector="initialize:priority:">initialize: aTitle priority: aPriority
+      "Initialize task with a title and priority"
+      self initialize.
+      title := aTitle.
+      priority := aPriority.
     </body>
   </methods>
 
@@ -163,12 +176,140 @@
   </methods>
 
   <!-- ====================================================== -->
+  <!-- Class: UrgentTask -->
+  <!-- ====================================================== -->
+
+  <class>
+    <name>UrgentTask</name>
+    <environment>TodoApp.Core</environment>
+    <super>Task</super>
+    <private>false</private>
+    <indexed-type>none</indexed-type>
+    <inst-vars>deadline escalationLevel notificationSent</inst-vars>
+    <class-inst-vars></class-inst-vars>
+    <imports></imports>
+    <category>TodoCore</category>
+    <attributes>
+      <package>TodoCore</package>
+    </attributes>
+  </class>
+
+  <comment>
+    <class-id>UrgentTask</class-id>
+    <body>
+      UrgentTask extends Task with deadline tracking and escalation capabilities.
+      This demonstrates inheritance from a custom class (Task) rather than Core.Object.
+    </body>
+  </comment>
+
+  <methods>
+    <class-id>UrgentTask</class-id>
+    <category>initialization</category>
+
+    <body package="TodoCore" selector="initialize">initialize
+      super initialize.
+      priority := #high.
+      deadline := DateAndTime now addDays: 1.
+      escalationLevel := 0.
+      notificationSent := false.
+    </body>
+
+    <body package="TodoCore" selector="initialize:">initialize: aTitle
+      "Initialize urgent task with a title"
+      super initialize: aTitle.
+      deadline := DateAndTime now addDays: 1.
+      escalationLevel := 0.
+      notificationSent := false.
+    </body>
+
+    <body package="TodoCore" selector="initialize:deadline:">initialize: aTitle deadline: aDeadline
+      "Initialize urgent task with title and deadline"
+      super initialize: aTitle.
+      deadline := aDeadline.
+      escalationLevel := 0.
+      notificationSent := false.
+    </body>
+  </methods>
+
+  <methods>
+    <class-id>UrgentTask</class-id>
+    <category>accessing</category>
+
+    <body package="TodoCore" selector="deadline">deadline
+      ^deadline
+    </body>
+
+    <body package="TodoCore" selector="deadline:">deadline: aTimestamp
+      deadline := aTimestamp.
+      self markModified.
+    </body>
+
+    <body package="TodoCore" selector="escalationLevel">escalationLevel
+      ^escalationLevel
+    </body>
+
+    <body package="TodoCore" selector="notificationSent">notificationSent
+      ^notificationSent
+    </body>
+  </methods>
+
+  <methods>
+    <class-id>UrgentTask</class-id>
+    <category>operations</category>
+
+    <body package="TodoCore" selector="escalate">escalate
+      escalationLevel := escalationLevel + 1.
+      notificationSent := false.
+      self markModified.
+      Transcript show: 'Task escalated to level ', escalationLevel printString, ': ', title; cr.
+    </body>
+
+    <body package="TodoCore" selector="sendNotification">sendNotification
+      notificationSent ifFalse: [
+        Transcript show: '🚨 URGENT: ', title, ' (Deadline: ', deadline asString, ')'; cr.
+        notificationSent := true.
+        self markModified].
+    </body>
+
+    <body package="TodoCore" selector="isOverdue">isOverdue
+      ^DateAndTime now > deadline
+    </body>
+
+    <body package="TodoCore" selector="hoursUntilDeadline">hoursUntilDeadline
+      | duration |
+      duration := deadline - DateAndTime now.
+      ^(duration asSeconds / 3600) asFloat
+    </body>
+  </methods>
+
+  <methods>
+    <class-id>UrgentTask</class-id>
+    <category>printing</category>
+
+    <body package="TodoCore" selector="printString">printString
+      ^String streamContents: [:s |
+        s nextPutAll: '🚨 [URGENT-L';
+        nextPutAll: escalationLevel printString;
+        nextPutAll: '] ';
+        nextPutAll: title;
+        nextPutAll: (done ifTrue: [' [✓]'] ifFalse: [' [ ]']);
+        nextPutAll: ' (Due: ';
+        nextPutAll: deadline asString;
+        nextPutAll: ')'.
+        tags isEmpty ifFalse: [
+          s nextPutAll: ' {';
+          nextPutAll: (tags joinSeparatedBy: ', ');
+          nextPutAll: '}']]
+    </body>
+  </methods>
+
+  <!-- ====================================================== -->
   <!-- Class: TaskRepository -->
   <!-- ====================================================== -->
 
   <class>
     <name>TaskRepository</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Core</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -195,6 +336,19 @@
     <body package="TodoCore" selector="initialize">initialize
       super initialize.
       tasks := OrderedCollection new.
+    </body>
+
+    <body package="TodoCore" selector="initialize:">initialize: aCapacity
+      "Initialize with a specific capacity hint"
+      super initialize.
+      tasks := OrderedCollection new: aCapacity.
+    </body>
+
+    <body package="TodoCore" selector="initialize:with:">initialize: aCapacity with: initialTasks
+      "Initialize with capacity and initial tasks"
+      super initialize.
+      tasks := OrderedCollection new: aCapacity.
+      tasks addAll: initialTasks.
     </body>
   </methods>
 
@@ -300,7 +454,7 @@
 
   <class>
     <name>TaskService</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Core</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -429,7 +583,7 @@
 
   <class>
     <name>SyncQueue</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Core</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>

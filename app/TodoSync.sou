@@ -17,7 +17,7 @@
 
   <class>
     <name>SyncProvider</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Sync</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -61,7 +61,7 @@
 
   <class>
     <name>HttpSyncProxy</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Sync</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -143,12 +143,120 @@
   </methods>
 
   <!-- ====================================================== -->
+  <!-- Class: SecureHttpSyncProxy -->
+  <!-- ====================================================== -->
+
+  <class>
+    <name>SecureHttpSyncProxy</name>
+    <environment>TodoApp.Sync</environment>
+    <super>HttpSyncProxy</super>
+    <private>false</private>
+    <indexed-type>none</indexed-type>
+    <inst-vars>encryptionKey sslVersion certificatePath</inst-vars>
+    <class-inst-vars></class-inst-vars>
+    <imports></imports>
+    <category>TodoSync</category>
+    <attributes>
+      <package>TodoSync</package>
+    </attributes>
+  </class>
+
+  <comment>
+    <class-id>SecureHttpSyncProxy</class-id>
+    <body>
+      SecureHttpSyncProxy extends HttpSyncProxy with enhanced security features.
+      Demonstrates inheritance from a custom class (HttpSyncProxy).
+    </body>
+  </comment>
+
+  <methods>
+    <class-id>SecureHttpSyncProxy</class-id>
+    <category>initialization</category>
+
+    <body package="TodoSync" selector="initialize">initialize
+      super initialize.
+      encryptionKey := 'AES256_KEY_PLACEHOLDER'.
+      sslVersion := 'TLSv1.3'.
+      certificatePath := '/etc/ssl/certs/app.pem'.
+    </body>
+
+    <body package="TodoSync" selector="initialize:">initialize: aCertPath
+      "Initialize with custom certificate path"
+      self initialize.
+      certificatePath := aCertPath.
+    </body>
+
+    <body package="TodoSync" selector="initialize:ssl:">initialize: aCertPath ssl: aSslVersion
+      "Initialize with custom certificate and SSL version"
+      self initialize.
+      certificatePath := aCertPath.
+      sslVersion := aSslVersion.
+    </body>
+  </methods>
+
+  <methods>
+    <class-id>SecureHttpSyncProxy</class-id>
+    <category>accessing</category>
+
+    <body package="TodoSync" selector="encryptionKey">encryptionKey
+      ^encryptionKey
+    </body>
+
+    <body package="TodoSync" selector="encryptionKey:">encryptionKey: aKey
+      encryptionKey := aKey
+    </body>
+
+    <body package="TodoSync" selector="sslVersion">sslVersion
+      ^sslVersion
+    </body>
+
+    <body package="TodoSync" selector="certificatePath">certificatePath
+      ^certificatePath
+    </body>
+  </methods>
+
+  <methods>
+    <class-id>SecureHttpSyncProxy</class-id>
+    <category>api</category>
+
+    <body package="TodoSync" selector="syncTasks:">syncTasks: aCollection
+      Transcript show: '🔒 Secure HTTPS sync initiated...'; cr.
+      Transcript show: 'SSL: ', sslVersion, ' | Cert: ', certificatePath; cr.
+      self encryptData: aCollection.
+      super syncTasks: aCollection.
+      Transcript show: '🔒 Secure sync complete.'; cr.
+    </body>
+
+    <body package="TodoSync" selector="syncChanges:">syncChanges: aChangeCollection
+      Transcript show: '🔒 Secure HTTPS change sync...'; cr.
+      Transcript show: 'Encryption: Enabled (AES-256)'; cr.
+      self encryptData: aChangeCollection.
+      super syncChanges: aChangeCollection.
+      Transcript show: '🔒 Secure change sync complete.'; cr.
+    </body>
+  </methods>
+
+  <methods>
+    <class-id>SecureHttpSyncProxy</class-id>
+    <category>private</category>
+
+    <body package="TodoSync" selector="encryptData:">encryptData: aData
+      Transcript show: '  Encrypting ', aData size printString, ' items with ', encryptionKey; cr.
+    </body>
+
+    <body package="TodoSync" selector="verifyCertificate">verifyCertificate
+      Transcript show: '  Verifying SSL certificate: ', certificatePath; cr.
+      ^true
+    </body>
+  </methods>
+
+  <!-- ====================================================== -->
   <!-- Class: WebSocketSyncProxy -->
   <!-- ====================================================== -->
 
   <class>
     <name>WebSocketSyncProxy</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Sync</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -248,7 +356,7 @@
 
   <class>
     <name>BatchSyncProxy</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Sync</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
@@ -349,7 +457,7 @@
 
   <class>
     <name>SyncController</name>
-    <environment>Smalltalk</environment>
+    <environment>TodoApp.Sync</environment>
     <super>Core.Object</super>
     <private>false</private>
     <indexed-type>none</indexed-type>
