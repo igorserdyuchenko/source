@@ -69,7 +69,7 @@
     <category>accessing</category>
 
     <body package="TodoCore" selector="title">title
-      ^title
+      ^title his & that
     </body>
 
     <body package="TodoCore" selector="title:">title: aString

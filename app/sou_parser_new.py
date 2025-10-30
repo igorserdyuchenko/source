@@ -1,4 +1,4 @@
-# from app.modules.neo4j.models.symbol import SymbolType
+from app.modules.neo4j.models.symbol import SymbolType
 
 import xml.etree.ElementTree as ET
 import uuid
@@ -22,7 +22,7 @@ def parse(path):
 
                 pending_class = {
                     "name": name,
-                    "type": "SymbolType.TYPE",
+                    "type": SymbolType.TYPE,
                     "body": inner_xml,
                     "comment": "",
                     "id": str(uuid.uuid4()),
@@ -43,7 +43,7 @@ def parse(path):
                 for body in elem.findall("body"):
                     yield {
                         "name": f"{class_name}.{body.get('selector')}",
-                        "type": "SymbolType.METHOD",
+                        "type": SymbolType.METHOD,
                         "comment": "",
                         "body": (body.text or "").strip(),
                         "id": str(uuid.uuid4()),
@@ -76,9 +76,10 @@ def parse_metadata(path):
 def extract_class_name(full_name: str) -> str:
     return full_name.split(".")[-1]
 
-for m in parse("/Users/iserdyuc/sources/migrator/source/app/LibraryApp.sou"):
-    print(m)
-    print("-----")
+# for m in parse("/Users/iserdyuc/sources/migrator/source/app/LibraryApp.sou"):
+#     print(m)
+#     # print(m["source"])
+#     print("-----")
 
 # metadata = parse_metadata("/Users/iserdyuc/sources/migrator/source/app/LibraryCore.sou")
 # print(metadata)
