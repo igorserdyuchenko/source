@@ -121,12 +121,16 @@ def truncate_xml_to_lines(input_file, max_lines=100, priority_prefixes=None):
         output_lines.append(all_lines[i])
         used_lines.add(i)
 
-    # Add priority classes and methods
+    # Add priority classes and methods (respecting max_lines)
     for elem_type, start, end, name in priority_ranges:
+        if len(output_lines) >= max_lines:
+            break
         for i in range(start, end + 1):
             if i not in used_lines:
                 output_lines.append(all_lines[i])
                 used_lines.add(i)
+                if len(output_lines) >= max_lines:
+                    break
 
     # Add other content up to max_lines
     for i in range(header_end + 1, len(all_lines)):
