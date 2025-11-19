@@ -86,3 +86,5 @@ for key, q in queries.items():
     print(f"Relationships created: {rel_created}\n")
 
 driver.close()
+
+#CREATE INDEX idx_symbol_fqname_lookup IF NOT EXISTS FOR (d:Symbol) ON (d.fq_name, d.repository_url, d.type)"
