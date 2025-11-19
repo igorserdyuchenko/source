@@ -86,12 +86,12 @@ queries = {
 
     "IMPORTS_SYMBOL":"""
             CALL (){
-            MATCH (file:File {repository_url: $repository_url})
-            MATCH (symbol:Symbol)
-            MATCH (def_file:File)-[:DEFINES_SYMBOL]->(symbol)
-            WHERE file.file_path <> def_file.file_path
-            MERGE (file)-[:IMPORTS_SYMBOL_TEST]->(symbol)
-            } IN TRANSACTIONS OF $batchSize ROWS""",
+            MATCH (file:File {repository_url: "https://github.com/igorserdyuchenko/source.git"})
+            MATCH (file)-[:DEFINES_SYMBOL]->(caller:Symbol)
+            MATCH (caller)-[:CALLS]->(callee:Symbol)
+            WHERE file.path <> callee.file_path
+            MERGE (file)-[:IMPORTS_SYMBOL_TEST]->(callee)
+            } IN TRANSACTIONS OF 1000 ROWS""",
     "DEPENDS_ON_FILE":"""
                 CALL (){
                 MATCH (f1:File {repository_url: $repository_url})-[:IMPORTS_SYMBOL]->(s:Symbol)<-[:DEFINES_SYMBOL]-(f2:File)
