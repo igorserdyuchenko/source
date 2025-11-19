@@ -30,53 +30,59 @@ def run_query_with_timing(query, parameters=None):
 
 # Example usage
 queries = {
-    # "DEFINED_IN_NAMESPACE": """                 CALL (){
-    #                                                 MATCH (m:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git"})
-    #                                                 MATCH (t:Namespace {repository_url: "https://github.com/igorserdyuchenko/source.git"})
-    #                                                 WHERE m.namespace = t.name
-    #                                                   AND m.type IN ['TYPE', 'METHOD']
-    #                                                 MERGE (m)-[:DEFINED_IN_NAMESPACE_TEST]->(t)
-    #                                                 } IN TRANSACTIONS OF 1000 ROWS""",
-    # "DEFINED_IN_TYPE": """
-    #                                         CALL (){
-    #                                             MATCH (m:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git", type: 'METHOD'})
-    #                                             WHERE m.defined_in_type IS NOT NULL
-    #                                             WITH apoc.convert.fromJsonList(m.defined_in_type) AS typeNameList, m
-    #                                             UNWIND typeNameList AS typeName
-    #                                             MATCH (t:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git", type: 'TYPE', fq_name: typeName, file_path: m.file_path})
-    #                                             MERGE (m)-[:DEFINED_IN_TYPE_TEST]->(t)
-    #                                             } IN TRANSACTIONS OF 1000 ROWS""",
+    "DEFINED_IN_NAMESPACE": """
+        CALL (){
+            MATCH (m:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git"})
+            MATCH (t:Namespace {repository_url: "https://github.com/igorserdyuchenko/source.git"})
+            WHERE m.namespace = t.name
+              AND m.type IN ['TYPE', 'METHOD']
+            MERGE (m)-[:DEFINED_IN_NAMESPACE_TEST]->(t)
+        } IN TRANSACTIONS OF 1000 ROWS""",
+
+    "DEFINED_IN_TYPE": """
+        CALL (){
+            MATCH (m:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git", type: 'METHOD'})
+            WHERE m.defined_in_type IS NOT NULL
+            WITH apoc.convert.fromJsonList(m.defined_in_type) AS typeNameList, m
+            UNWIND typeNameList AS typeName
+            MATCH (t:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git", type: 'TYPE', fq_name: typeName, file_path: m.file_path})
+            MERGE (m)-[:DEFINED_IN_TYPE_TEST]->(t)
+        } IN TRANSACTIONS OF 1000 ROWS""",
+
     "CALLS": """
-                MATCH (s:Symbol {
-                    type: 'METHOD',
-                    repository_url: "https://github.com/igorserdyuchenko/source.git"
-                })
-                WHERE s.method_calls IS NOT NULL
-                  AND s.method_calls <> ''
-                  AND s.method_calls <> '[]'
-                  AND s.method_calls <> 'null'
-                CALL (s) {
-                    UNWIND apoc.convert.fromJsonList(s.method_calls) AS method_call
-                    WITH s, method_call
-                    MATCH (d:Symbol {
-                        type: 'METHOD',
-                        repository_url: "https://github.com/igorserdyuchenko/source.git",
-                        fq_name: method_call
-                    })
-                    MERGE (s)-[:CALLS_TEST]->(d)
-                } IN TRANSACTIONS OF 1000 ROWS""",
-    # "DEFINES_SYMBOL": """   CALL () {
-    #     MATCH (file:File {repository_url: "https://github.com/igorserdyuchenko/source.git"})
-    #     MATCH (symbol:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git"})
-    #     WHERE symbol.file_path = file.path
-    #     MERGE (file)-[:DEFINES_SYMBOL_TEST]->(symbol)
-    #     }   IN TRANSACTIONS OF 1000 ROWS""",
-    #
-    # "INCLUDES_FILE": """        CALL (){
-    #         MATCH (repo:Repository {url: "https://github.com/igorserdyuchenko/source.git"})
-    #         MATCH (file:File {repository_url: "https://github.com/igorserdyuchenko/source.git"})
-    #         MERGE (repo)-[:INCLUDES_FILE_TEST]->(file)
-    #     }  IN TRANSACTIONS OF 1000 ROWS"""
+        MATCH (s:Symbol {
+            type: 'METHOD',
+            repository_url: "https://github.com/igorserdyuchenko/source.git"
+        })
+        WHERE s.method_calls IS NOT NULL
+          AND s.method_calls <> ''
+          AND s.method_calls <> '[]'
+          AND s.method_calls <> 'null'
+        CALL (s) {
+            UNWIND apoc.convert.fromJsonList(s.method_calls) AS method_call
+            WITH s, method_call
+            MATCH (d:Symbol {
+                type: 'METHOD',
+                repository_url: "https://github.com/igorserdyuchenko/source.git",
+                fq_name: method_call
+            })
+            MERGE (s)-[:CALLS_TEST]->(d)
+        } IN TRANSACTIONS OF 1000 ROWS""",
+
+    "DEFINES_SYMBOL": """
+        CALL () {
+            MATCH (file:File {repository_url: "https://github.com/igorserdyuchenko/source.git"})
+            MATCH (symbol:Symbol {repository_url: "https://github.com/igorserdyuchenko/source.git"})
+            WHERE symbol.file_path = file.path
+            MERGE (file)-[:DEFINES_SYMBOL_TEST]->(symbol)
+        } IN TRANSACTIONS OF 1000 ROWS""",
+
+    "INCLUDES_FILE": """
+        CALL (){
+            MATCH (repo:Repository {url: "https://github.com/igorserdyuchenko/source.git"})
+            MATCH (file:File {repository_url: "https://github.com/igorserdyuchenko/source.git"})
+            MERGE (repo)-[:INCLUDES_FILE_TEST]->(file)
+        } IN TRANSACTIONS OF 1000 ROWS"""
 }
 
 for key, q in queries.items():
