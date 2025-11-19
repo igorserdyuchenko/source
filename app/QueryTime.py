@@ -82,7 +82,23 @@ queries = {
             MATCH (repo:Repository {url: "https://github.com/igorserdyuchenko/source.git"})
             MATCH (file:File {repository_url: "https://github.com/igorserdyuchenko/source.git"})
             MERGE (repo)-[:INCLUDES_FILE_TEST]->(file)
-        } IN TRANSACTIONS OF 1000 ROWS"""
+        } IN TRANSACTIONS OF 1000 ROWS""",
+
+    "IMPORTS_SYMBOL":"""
+            CALL (){
+            MATCH (file:File {repository_url: $repository_url})
+            MATCH (symbol:Symbol)
+            MATCH (def_file:File)-[:DEFINES_SYMBOL]->(symbol)
+            WHERE file.file_path <> def_file.file_path
+            MERGE (file)-[:IMPORTS_SYMBOL_TEST]->(symbol)
+            } IN TRANSACTIONS OF $batchSize ROWS""",
+    "DEPENDS_ON_FILE":"""
+                CALL (){
+                MATCH (f1:File {repository_url: $repository_url})-[:IMPORTS_SYMBOL]->(s:Symbol)<-[:DEFINES_SYMBOL]-(f2:File)
+                WHERE f1.file_path <> f2.file_path
+                  AND f1.file_path <> s.file_path
+                MERGE (f1)-[:DEPENDS_ON_FILE_TEST]->(f2)
+                } IN TRANSACTIONS OF $batchSize ROWS"""
 }
 
 for key, q in queries.items():
